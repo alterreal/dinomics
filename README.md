@@ -10,6 +10,8 @@ For each processed slice the package returns:
 
 Any grayscale medical image that SimpleITK can read (`.mha`, `.nii`, `.nii.gz`, …) works.
 
+**First time here?** Read the [user guide](docs/user-guide.md) — install, first extraction, configs, masks, outputs, and common problems.
+
 ## Install
 
 The project is managed with [uv](https://docs.astral.sh/uv/) (`pyproject.toml` + `uv.lock`). It targets Python 3.11–3.13 (`.python-version` pins 3.12).
