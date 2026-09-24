@@ -5,7 +5,7 @@
 model:
   name: facebook/dinov2-base
   feature_type: dinov2          # dinov2 | dinov3
-  image_size: 224               # square resize (224 -> 16x16 patches for ViT-B/14)
+  image_size: 448              # square resize (224 -> 16x16 patches for ViT-B/14)
   device: auto                  # auto | cuda | cpu
   n_register_tokens: 0          # DINOv2 has no register tokens
   do_center_crop: false

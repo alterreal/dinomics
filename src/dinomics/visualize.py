@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 from sklearn.decomposition import PCA
 
-from dinomics.preprocess import patch_grid_edges
+from dinomics.preprocess import pad_to_square, patch_grid_edges
 
 try:
     import matplotlib.pyplot as plt
@@ -153,6 +153,8 @@ def plot_pca_features(
 
     cropped = np.asarray(image_slice, dtype=np.float32)
     original = cropped if original_slice is None else np.asarray(original_slice, dtype=np.float32)
+    if mask_slice is None and cropped.shape[0] != cropped.shape[1]:
+        cropped, _ = pad_to_square(cropped, fill=0)
     if mask_slice is not None:
         mask_bin = np.asarray(mask_slice) > 0
         preprocessed = cropped * mask_bin

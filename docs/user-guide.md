@@ -141,9 +141,10 @@ A mask is a second image in the **same patient space**. Values `> 0` are the ROI
 Without a mask:
 
 - The **full field of view** is encoded.
-- `apply_image_mask` and `apply_patch_mask` do nothing.
+- Each slice is **letterboxed** to a square (centered, zero-filled) *after* intensity/RGB and *before* the model resize, so a non-square image is not stretched. Already-square slices are left as-is.
+- `apply_image_mask` does nothing. If `apply_patch_mask` is on and padding was added, letterbox patches are zeroed and `patch_mask` marks the content cells; otherwise `patch_mask` is `None`.
 - `skip_empty_slices` drops slices that are all zeros (not “empty mask”).
-- `result.patch_mask` is `None`.
+- `metadata["square_pad"]` stores the pad amounts (`top`, `bottom`, `left`, `right`).
 
 **`crop_to_mask: true` requires a mask.** The starter file `configs/dinov2.yaml` has this on. Use `configs/default.yaml` or set `crop_to_mask: false` if you have no ROI.
 
@@ -162,9 +163,10 @@ This is the full pipeline, in order. Every knob lives in the config file.
 3. **Optional image mask** (`apply_image_mask`): multiply the (cropped) volume by the mask so background voxels are zero **before** the network.
 4. **Pick slices**: `slice_indices`, or every `slice_step`-th slice. `skip_empty_slices` drops empty ones. `max_slices` truncates the list.
 5. **Intensity**: optional CT window `[center, width]` or percentile clip, then per-slice **min–max** to `0–255` and stack to RGB.
-6. **HuggingFace processor**: square resize to `image_size × image_size`, ImageNet normalize. `do_center_crop` is off in the shipped configs so the whole (cropped) slice is kept.
-7. **Forward pass**: CLS token + patch tokens. DINOv3 also drops **register tokens** (4 by default) before the patch grid.
-8. **Optional patch mask** (`apply_patch_mask`): each DINO token is tested on the **same uniform G×G tiling** the model uses after the square resize. If that cell has **no** mask voxels, the embedding is set to the zero vector.
+6. **Square pad (no mask only)**: if the slice is not square, center-pad with black so height equals width. This keeps aspect ratio when the processor later resizes to `image_size`.
+7. **HuggingFace processor**: square resize to `image_size × image_size`, ImageNet normalize. `do_center_crop` is off in the shipped configs so the whole (cropped or letterboxed) slice is kept.
+8. **Forward pass**: CLS token + patch tokens. DINOv3 also drops **register tokens** (4 by default) before the patch grid.
+9. **Optional patch mask** (`apply_patch_mask`): each DINO token is tested on the **same uniform G×G tiling** the model uses after the square resize. If that cell has **no** mask voxels, the embedding is set to the zero vector.
 
 Background that DINO still “sees” via attention (black padded pixels, nearby anatomy) can influence kept tokens. Zeroing is applied **after** the forward pass.
 
@@ -305,7 +307,7 @@ Set `feature_type` to match the architecture. A wrong value shifts the patch gri
 
 **CT with a soft-tissue window:** `configs/ct.yaml` — `window: [40, 400]`, crop to mask, `image_size: 448` (32×32 patches).
 
-**Whole slice, no ROI:** `configs/default.yaml` and **do not** pass a mask. Leave `crop_to_mask: false`.
+**Whole slice, no ROI:** `configs/default.yaml` and **do not** pass a mask. Leave `crop_to_mask: false`. Non-square slices are letterboxed to a square first.
 
 **Finer patches:** raise `image_size` (must stay compatible with the ViT patch size: multiples of 14 for DINOv2-base, 16 for DINOv3 ViT-B/16). More tokens, more memory.
 

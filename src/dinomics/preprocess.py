@@ -8,6 +8,49 @@ import torch
 from dinomics.config import IntensityConfig
 
 
+def pad_to_square(array: np.ndarray, fill: float | int = 0) -> tuple[np.ndarray, dict]:
+    """Center-pad a 2D slice (or ``H×W×C``) so height equals width.
+
+    Used when no ROI mask is given, so the HuggingFace square resize does not
+    stretch the anatomy. Already-square inputs are returned unchanged.
+    """
+    arr = np.asarray(array)
+    if arr.ndim < 2:
+        raise ValueError(f"Expected at least a 2D array, got shape {arr.shape}")
+
+    height, width = int(arr.shape[0]), int(arr.shape[1])
+    size = max(height, width)
+    top = (size - height) // 2
+    left = (size - width) // 2
+    bottom = size - height - top
+    right = size - width - left
+    info = {
+        "padded": bool(top or left or bottom or right),
+        "top": int(top),
+        "bottom": int(bottom),
+        "left": int(left),
+        "right": int(right),
+        "content_shape": (height, width),
+        "square_size": int(size),
+    }
+    if not info["padded"]:
+        return arr, info
+
+    pad_width: list[tuple[int, int]] = [(top, bottom), (left, right)]
+    pad_width.extend([(0, 0)] * (arr.ndim - 2))
+    return np.pad(arr, pad_width, mode="constant", constant_values=fill), info
+
+
+def content_mask_from_pad(info: dict) -> np.ndarray:
+    """Binary ``(S, S)`` mask of the unpadded content inside a letterboxed square."""
+    size = int(info["square_size"])
+    height, width = info["content_shape"]
+    mask = np.zeros((size, size), dtype=np.uint8)
+    y0, x0 = int(info["top"]), int(info["left"])
+    mask[y0 : y0 + int(height), x0 : x0 + int(width)] = 1
+    return mask
+
+
 def create_rgb_from_grayscale(image_array: np.ndarray) -> np.ndarray:
     """Normalize a grayscale slice to ``[0, 255]`` and stack it into RGB."""
     image_min = float(image_array.min())

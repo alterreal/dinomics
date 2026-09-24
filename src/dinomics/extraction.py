@@ -16,8 +16,10 @@ from dinomics.model import load_dino_model
 from dinomics.preprocess import (
     apply_intensity,
     apply_mask_to_patch_embeddings,
+    content_mask_from_pad,
     create_rgb_from_grayscale,
     crop_centered_on_mask,
+    pad_to_square,
 )
 
 
@@ -44,8 +46,8 @@ class FeatureResult:
         Original slice indices along the configured axis.
     patch_embeddings_flat
         Optional flat patches, shape ``(N, G*G, D)``.
-    metadata
-        Image path, model name, crop window, and related bookkeeping.
+        metadata
+        Image path, model name, crop window, letterbox pad, and related bookkeeping.
     """
 
     cls_embeddings: np.ndarray
@@ -209,6 +211,7 @@ class DinoExtractor:
 
         n_register = int(self.config.model.n_register_tokens or 0)
         include_flat = self.config.output.include_flat_patches
+        square_pad: dict | None = None
 
         for slice_idx in tqdm(loop_indices, desc="Extracting DINO features", leave=False):
             img_slice = array[slice_idx]
@@ -217,6 +220,10 @@ class DinoExtractor:
 
             img_slice = apply_intensity(img_slice, self.config.intensity)
             rgb_slice = create_rgb_from_grayscale(img_slice)
+            if mask_arr is None:
+                rgb_slice, square_pad = pad_to_square(rgb_slice, fill=0)
+                if label_slice is not None:
+                    label_slice, _ = pad_to_square(label_slice, fill=0)
             cls_emb, patch_emb = extract_dino_embeddings(
                 rgb_slice,
                 self.processor,
@@ -227,7 +234,16 @@ class DinoExtractor:
 
             patch_mask = None
             patch_labels = None
-            if settings.apply_patch_mask and mask_slice is not None:
+            if (
+                mask_slice is None
+                and settings.apply_patch_mask
+                and square_pad is not None
+                and square_pad["padded"]
+            ):
+                patch_emb, patch_labels, patch_mask = apply_mask_to_patch_embeddings(
+                    patch_emb, content_mask_from_pad(square_pad), mask_label=label_slice
+                )
+            elif settings.apply_patch_mask and mask_slice is not None:
                 patch_emb, patch_labels, patch_mask = apply_mask_to_patch_embeddings(
                     patch_emb, mask_slice, mask_label=label_slice
                 )
@@ -274,6 +290,7 @@ class DinoExtractor:
                 "n_register_tokens": n_register,
                 "device": str(self.device),
                 "crop_region": crop_region,
+                "square_pad": square_pad,
                 "spacing": volume.spacing,
                 "num_input_slices": n_input_slices,
                 "config": asdict(self.config),
