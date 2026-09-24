@@ -11,8 +11,6 @@ authors = [{ name = "Alexandre Calado" }]
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "numpy>=1.26",
-    "torch>=2.4,<2.7",
-    "torchvision>=0.19,<0.22",
     "transformers>=4.44",
     "SimpleITK>=2.3",
     "pyyaml>=6.0",
@@ -24,6 +22,28 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Pick one accelerator extra to match the NVIDIA driver (`nvidia-smi`).
+# The wheel CUDA version must be <= the driver CUDA version.
+cpu = [
+    "torch>=2.4,<2.7",
+    "torchvision>=0.19,<0.22",
+]
+cu118 = [
+    "torch>=2.4,<2.7",
+    "torchvision>=0.19,<0.22",
+]
+cu121 = [
+    "torch>=2.4,<2.7",
+    "torchvision>=0.19,<0.22",
+]
+cu124 = [
+    "torch>=2.4,<2.7",
+    "torchvision>=0.19,<0.22",
+]
+cu126 = [
+    "torch>=2.4,<2.7",
+    "torchvision>=0.19,<0.22",
+]
 notebook = [
     "jupyter>=1.0",
     "ipykernel>=6.29",
@@ -44,12 +64,53 @@ include = ["src/dinomics", "configs", "README.md"]
 
 [tool.uv]
 package = true
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "cu118" },
+        { extra = "cu121" },
+        { extra = "cu124" },
+        { extra = "cu126" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu118", extra = "cu118" },
+    { index = "pytorch-cu121", extra = "cu121" },
+    { index = "pytorch-cu124", extra = "cu124" },
+    { index = "pytorch-cu126", extra = "cu126" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu118", extra = "cu118" },
+    { index = "pytorch-cu121", extra = "cu121" },
+    { index = "pytorch-cu124", extra = "cu124" },
+    { index = "pytorch-cu126", extra = "cu126" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
 
 [[tool.uv.index]]
 name = "pytorch-cu121"
 url = "https://download.pytorch.org/whl/cu121"
 explicit = true
 
-[tool.uv.sources]
-torch = { index = "pytorch-cu121" }
-torchvision = { index = "pytorch-cu121" }
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
