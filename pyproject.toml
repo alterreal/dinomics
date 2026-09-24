@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dinomics"
+version = "0.1.0"
+description = "Extract DINOv2/DINOv3 CLS and patch features from 2D medical images and 3D volumes."
+readme = "README.md"
+authors = [{ name = "Alexandre Calado" }]
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "numpy>=1.26",
+    "torch>=2.4,<2.7",
+    "torchvision>=0.19,<0.22",
+    "transformers>=4.44",
+    "SimpleITK>=2.3",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "scikit-learn>=1.4",
+    "scikit-image>=0.22",
+    "matplotlib>=3.8",
+    "pillow>=10.0",
+]
+
+[project.optional-dependencies]
+notebook = [
+    "jupyter>=1.0",
+    "ipykernel>=6.29",
+    "ipywidgets>=8.1",
+]
+
+[project.scripts]
+dinomics = "dinomics.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/alexandrecalado/dinomics"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dinomics"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/dinomics", "configs", "README.md"]
+
+[tool.uv]
+package = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+torchvision = { index = "pytorch-cu121" }

@@ -1,0 +1,26 @@
+model:
+  name: facebook/dinov2-base
+  feature_type: dinov2
+  image_size: 224
+  device: auto
+  n_register_tokens: 0
+  do_center_crop: false
+
+intensity:
+  clip_percentiles: null
+  window: null
+
+extraction:
+  apply_image_mask: true
+  apply_patch_mask: true
+  skip_empty_slices: true
+  slice_axis: 0
+  slice_indices: null
+  slice_step: 1
+  max_slices: null
+  crop_to_mask: true
+  crop_size: 128
+  min_mask_pixels: 1
+
+output:
+  include_flat_patches: false

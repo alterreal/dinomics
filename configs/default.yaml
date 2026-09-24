@@ -1,0 +1,31 @@
+# Default dinomics extraction config (DINOv2-base).
+# Pass this file to extract_features(..., config="configs/default.yaml")
+# or edit a copy and point the extractor at it.
+
+model:
+  name: facebook/dinov2-base
+  feature_type: dinov2          # dinov2 | dinov3
+  image_size: 224               # square resize (224 -> 16x16 patches for ViT-B/14)
+  device: auto                  # auto | cuda | cpu
+  n_register_tokens: 0          # DINOv2 has no register tokens
+  do_center_crop: false
+
+intensity:
+  clip_percentiles: null        # e.g. [0.5, 99.5] to tame outliers before RGB conversion
+  window: null                  # CT window as [center, width], e.g. [40, 400]
+
+extraction:
+  apply_image_mask: true        # zero voxels outside the ROI before encoding
+  apply_patch_mask: true        # zero patch embeddings that miss the ROI
+  skip_empty_slices: true       # skip slices with no mask (or all-zero slices if no mask)
+  slice_axis: 0                 # numpy axis treated as the slice axis (0 = axial in sitk arrays)
+  slice_indices: null           # optional explicit list, e.g. [10, 11, 12]
+  slice_step: 1
+  max_slices: null
+  crop_to_mask: false           # square crop centered on the mask centroid
+  crop_size: null               # in-plane H=W. null = smallest square covering the mask
+                                # if the mask does not fit, the crop expands and out-of-image voxels are padded
+  min_mask_pixels: 1            # slices with fewer mask pixels in the crop are dropped
+
+output:
+  include_flat_patches: false

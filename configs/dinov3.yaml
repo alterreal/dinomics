@@ -1,0 +1,26 @@
+model:
+  name: facebook/dinov3-vitb16-pretrain-lvd1689m
+  feature_type: dinov3
+  image_size: 256
+  device: auto
+  n_register_tokens: 4          # CLS + 4 register tokens are dropped before patches
+  do_center_crop: false
+
+intensity:
+  clip_percentiles: null
+  window: null
+
+extraction:
+  apply_image_mask: true
+  apply_patch_mask: true
+  skip_empty_slices: true
+  slice_axis: 0
+  slice_indices: null
+  slice_step: 1
+  max_slices: null
+  crop_to_mask: false
+  crop_size: null
+  min_mask_pixels: 1
+
+output:
+  include_flat_patches: false
