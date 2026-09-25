@@ -1,5 +1,6 @@
 """dinomics: DINOv2/DINOv3 feature extraction for medical images."""
 
+from dinomics.aggregate import aggregate_patches, aggregate_slices
 from dinomics.config import DinomicsConfig, load_config
 from dinomics.extraction import DinoExtractor, FeatureResult, extract_features
 from dinomics.preprocess import crop_centered_on_mask, pad_to_square
@@ -11,6 +12,8 @@ __all__ = [
     "DinoExtractor",
     "DinomicsConfig",
     "FeatureResult",
+    "aggregate_patches",
+    "aggregate_slices",
     "crop_centered_on_mask",
     "extract_features",
     "load_config",

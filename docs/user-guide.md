@@ -227,7 +227,9 @@ If both are set, **window wins**. After this, each slice is still min–max scal
 
 | Key | Default | Meaning |
 |---|---|---|
-| `include_flat_patches` | `false` | Also store `patch_embeddings_flat` as `(N, G*G, D)` |
+| `include_flat_patches` | `false` | Also store a flattened copy of the patch tokens as `patch_embeddings_flat` |
+
+This flag does **not** change extraction, masking, or aggregation. `patch_embeddings` is always `(N, G, G, D)`. When `include_flat_patches` is `true`, the same tokens are also stored as `patch_embeddings_flat` with shape `(N, G*G, D)` (row-major flatten of the `G×G` grid). That is only a convenience so you do not have to reshape yourself; it duplicates memory in the result and in the saved `.npz`. Leave it `false` unless you specifically want the `(P, D)` layout per slice. `aggregate_patches` already accepts the spatial `(N, G, G, D)` array.
 
 After `load_config`, fields are normal Python attributes:
 
@@ -264,6 +266,31 @@ result = FeatureResult.load("outputs/case.npz")
 ```
 
 The `.npz` also stores `global_embeddings` as an alias of `cls_embeddings`. `metadata` is pickled inside the archive (`allow_pickle=True` on load).
+
+### Case-level aggregation
+
+To get a **single vector per case** (radiomics-style), pool over slices (CLS) or over in-ROI patches. Pass one NumPy reducer or a list; a list is concatenated.
+
+```python
+import numpy as np
+
+# patches: only tokens that overlap the ROI when patch_mask is present
+patch_vec = result.aggregate_patches(np.mean)                 # (D,)
+patch_vec = result.aggregate_patches([np.mean, np.max])       # (2D,)
+
+# CLS / slices
+cls_vec = result.aggregate_slices(np.mean)                    # (D,)
+cls_vec = result.aggregate_slices([np.mean, np.max, np.std])  # (3D,)
+```
+
+Each function is called as `fn(tokens, axis=0)`. `np.mean`, `np.max`, `np.std`, `np.median` all work. Custom reducers are fine if they accept `axis`:
+
+```python
+p90 = lambda x, axis: np.percentile(x, 90, axis=axis)
+result.aggregate_patches(p90)
+```
+
+`aggregate_patches` / `aggregate_slices` are also importable as standalone functions if you have raw arrays.
 
 ---
 
@@ -359,7 +386,9 @@ from dinomics import (
     extract_features,    # one-shot
     load_config,         # YAML / TOML / dict
     DinomicsConfig,
-    FeatureResult,       # .save() / .load()
+    FeatureResult,       # .save() / .load() / .aggregate_patches() / .aggregate_slices()
+    aggregate_patches,
+    aggregate_slices,
     crop_centered_on_mask,
     pca_patch_map,
     plot_pca_features,

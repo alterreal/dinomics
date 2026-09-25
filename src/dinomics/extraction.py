@@ -77,6 +77,19 @@ class FeatureResult:
         payload["metadata"] = np.array(self.metadata, dtype=object)
         return payload
 
+    def aggregate_patches(self, reducers, mask: np.ndarray | None = None) -> np.ndarray:
+        """Case-level vector from patch tokens. See :func:`dinomics.aggregate_patches`."""
+        from dinomics.aggregate import aggregate_patches
+
+        occ = self.patch_mask if mask is None else mask
+        return aggregate_patches(self.patch_embeddings, reducers, mask=occ)
+
+    def aggregate_slices(self, reducers) -> np.ndarray:
+        """Case-level vector from CLS embeddings. See :func:`dinomics.aggregate_slices`."""
+        from dinomics.aggregate import aggregate_slices
+
+        return aggregate_slices(self.cls_embeddings, reducers)
+
     def save(self, path: str | Path) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
