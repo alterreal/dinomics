@@ -1,8 +1,8 @@
-# dinomics
+# DINOmics 🦖🩻
 
-Extract **DINOv2 / DINOv3** features from 2D medical images and 3D volumes (slice-wise).
+A medical imaging pipeline that wraps Hugging Face DINOv2/DINOv3 and handles I/O, preprocessing, masking, and aggregation so you can extract CLS (slice) and patch embeddings from 3D volumes (and 2D images) slice by slice.
 
-For each processed slice the package returns:
+For each processed slice the DINOmics returns:
 
 - **CLS** embeddings — one vector per slice (`cls_embeddings`)
 - **Patch** embeddings — a spatial grid of patch tokens (`patch_embeddings`)
@@ -10,11 +10,11 @@ For each processed slice the package returns:
 
 Any grayscale medical image that SimpleITK can read (`.mha`, `.nii`, `.nii.gz`, …) works.
 
-**First time here?** Read the [user guide](docs/user-guide.md) — install, first extraction, configs, masks, outputs, and common problems.
+**First time here?** Read the [user guide](docs/user-guide.md)
 
 ## Install
 
-The project is managed with [uv](https://docs.astral.sh/uv/) (`pyproject.toml` + `uv.lock`). It targets Python 3.11–3.13 (`.python-version` pins 3.12).
+DINOmics is managed with [uv](https://docs.astral.sh/uv/) (`pyproject.toml` + `uv.lock`). It targets Python 3.11–3.13 (`.python-version` pins 3.12).
 
 PyTorch is installed through a **conflicting extra**. Pick the wheel whose CUDA version is **≤ your driver** (`nvidia-smi`). macOS and machines without an NVIDIA GPU should use `cpu`.
 
@@ -38,26 +38,7 @@ Activate the environment with `source .venv/bin/activate`, or prefix commands wi
 
 ## Configuration
 
-Every extraction parameter lives in a YAML or TOML file that you pass into the extractor. Start from `configs/default.yaml` (DINOv2-base) or `configs/dinov3.yaml` / `configs/ct.yaml` and edit what you need:
-
-```yaml
-model:
-  name: facebook/dinov2-base
-  feature_type: dinov2          # dinov2 | dinov3
-  image_size: 224
-  device: auto                  # auto | cuda | cpu
-
-extraction:
-  apply_image_mask: true
-  apply_patch_mask: true
-  skip_empty_slices: true
-  crop_to_mask: false           # square crop around the mask centroid
-  crop_size: null               # in-plane H=W; expands + pads if the mask does not fit
-  remove_small_holes: false     # fill small holes in the ROI mask
-  mirror_mask_y: false          # union with left–right flip across the centroid
-```
-
-`feature_type: dinov3` drops the CLS token **and** the register tokens before the patch grid (4 registers by default, matching `facebook/dinov3-vitb16-pretrain-lvd1689m`).
+Every extraction parameter lives in a YAML or TOML file that you pass into the extractor. Start from `configs/default.yaml` (DINOv2-base) or `configs/dinov3.yaml` / `configs/ct.yaml` and edit what you need.
 
 ## Quick start
 
@@ -97,7 +78,7 @@ uv run dinomics --image example_data/MRI/10000_1000000_t2w.mha \
 
 ## Example notebook
 
-`notebooks/feature_extraction.ipynb` runs the extractor on the bundled MRI and CT examples and visualizes patch tokens using PCA.
+`notebooks/feature_extraction.ipynb` runs the extractor on CT, MRI and X-Ray examples and visualizes patch tokens using PCA (as done in the original DINO papers). Give it a whirl!
 
 ## Output
 
@@ -111,3 +92,5 @@ uv run dinomics --image example_data/MRI/10000_1000000_t2w.mha \
 | `slice_indices` | `(N,)` | Original slice indices |
 
 `FeatureResult.save(path)` writes a compressed `.npz` (`global_embeddings` is stored as an alias of `cls_embeddings`).
+
+
