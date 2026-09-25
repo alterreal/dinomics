@@ -57,6 +57,9 @@ class ExtractionSettings:
     crop_to_mask: bool = False
     crop_size: int | None = None
     min_mask_pixels: int = 1
+    remove_small_holes: bool = False
+    hole_area_threshold: int = 512
+    mirror_mask_y: bool = False
 
 
 @dataclass

@@ -195,7 +195,7 @@ def plot_pca_features(
     axes[2].axis("off")
 
     axes[3].imshow(_rgba(heatmap_resized, patch_visible_resized))
-    axes[3].imshow(np.ma.masked_where(~pixel_visible, preprocessed), cmap=_gray_cmap(), alpha=0.5)
+    axes[3].imshow(np.ma.masked_where(~pixel_visible, preprocessed), cmap=_gray_cmap(), alpha=0.6)
     if label_slice is not None:
         from skimage import measure
 

@@ -20,6 +20,7 @@ from dinomics.preprocess import (
     create_rgb_from_grayscale,
     crop_centered_on_mask,
     pad_to_square,
+    process_mask,
 )
 
 
@@ -166,6 +167,13 @@ class DinoExtractor:
 
         original_z: list[int] | None = None
         n_input_slices = int(array.shape[0])
+        if mask_arr is not None and (settings.remove_small_holes or settings.mirror_mask_y):
+            mask_arr = process_mask(
+                mask_arr,
+                remove_holes=settings.remove_small_holes,
+                hole_area_threshold=settings.hole_area_threshold,
+                mirror_y=settings.mirror_mask_y,
+            )
         if settings.crop_to_mask:
             if mask_arr is None:
                 raise ValueError("crop_to_mask=True requires a mask")
@@ -291,6 +299,11 @@ class DinoExtractor:
                 "device": str(self.device),
                 "crop_region": crop_region,
                 "square_pad": square_pad,
+                "mask_processing": {
+                    "remove_small_holes": bool(settings.remove_small_holes),
+                    "hole_area_threshold": int(settings.hole_area_threshold),
+                    "mirror_mask_y": bool(settings.mirror_mask_y),
+                },
                 "spacing": volume.spacing,
                 "num_input_slices": n_input_slices,
                 "config": asdict(self.config),

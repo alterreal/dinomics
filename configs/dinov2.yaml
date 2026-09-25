@@ -21,6 +21,9 @@ extraction:
   crop_to_mask: true
   crop_size: 128
   min_mask_pixels: 1
+  remove_small_holes: true
+  hole_area_threshold: 512
+  mirror_mask_y: true
 
 output:
   include_flat_patches: false

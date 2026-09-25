@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import inspect
+
 import numpy as np
 import torch
+
+from skimage.morphology import remove_small_holes
 
 from dinomics.config import IntensityConfig
 
@@ -49,6 +53,77 @@ def content_mask_from_pad(info: dict) -> np.ndarray:
     y0, x0 = int(info["top"]), int(info["left"])
     mask[y0 : y0 + int(height), x0 : x0 + int(width)] = 1
     return mask
+
+
+def mirror_mask_y(mask: np.ndarray, cx: float) -> np.ndarray:
+    """Reflect a 2D mask across the vertical line ``x = cx`` (left–right).
+
+    Same construction as dinov2-radiomics: nonzero pixels are copied to
+    ``2 * cx - x``, then clipped to the slice bounds.
+    """
+    mask_bin = np.asarray(mask) > 0
+    coords = np.column_stack(np.nonzero(mask_bin))
+    if coords.size == 0:
+        return np.zeros_like(mask_bin, dtype=np.uint8)
+
+    mirrored = coords.copy()
+    mirrored[:, 1] = np.round(2.0 * float(cx) - coords[:, 1]).astype(int)
+    valid = (
+        (mirrored[:, 0] >= 0)
+        & (mirrored[:, 0] < mask_bin.shape[0])
+        & (mirrored[:, 1] >= 0)
+        & (mirrored[:, 1] < mask_bin.shape[1])
+    )
+    out = np.zeros_like(mask_bin, dtype=np.uint8)
+    out[mirrored[valid, 0], mirrored[valid, 1]] = 1
+    return out
+
+
+def process_mask(
+    mask: np.ndarray,
+    *,
+    remove_holes: bool = False,
+    hole_area_threshold: int = 512,
+    mirror_y: bool = False,
+) -> np.ndarray:
+    """Fill small holes and/or symmetrize a ``(Z, Y, X)`` mask.
+
+    Order matches dinov2-radiomics: per-slice ``remove_small_holes``, then
+    union with the left–right reflection across the 3D mask centroid's x.
+    A 2D mask is treated as a single-slice volume.
+    """
+    arr = np.asarray(mask)
+    squeeze = arr.ndim == 2
+    if squeeze:
+        arr = arr[np.newaxis, ...]
+    if arr.ndim != 3:
+        raise ValueError(f"Expected a 2D or (Z, Y, X) mask, got shape {arr.shape}")
+
+    processed = (arr > 0).astype(np.uint8)
+    if remove_holes:
+        if hole_area_threshold < 0:
+            raise ValueError(f"hole_area_threshold must be >= 0, got {hole_area_threshold}")
+        hole_kwargs: dict = {"connectivity": 2}
+        hole_params = inspect.signature(remove_small_holes).parameters
+        if "max_size" in hole_params:
+            hole_kwargs["max_size"] = int(hole_area_threshold)
+        else:
+            hole_kwargs["area_threshold"] = int(hole_area_threshold)
+        processed = np.stack(
+            [
+                remove_small_holes(slice_.astype(bool), **hole_kwargs).astype(np.uint8)
+                for slice_ in processed
+            ]
+        )
+
+    if mirror_y:
+        coords = np.argwhere(processed > 0)
+        if coords.size:
+            cx = float(coords.mean(axis=0)[2])
+            mirrored = np.stack([mirror_mask_y(slice_, cx) for slice_ in processed])
+            processed = ((processed > 0) | (mirrored > 0)).astype(np.uint8)
+
+    return processed[0] if squeeze else processed
 
 
 def create_rgb_from_grayscale(image_array: np.ndarray) -> np.ndarray:

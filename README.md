@@ -53,6 +53,8 @@ extraction:
   skip_empty_slices: true
   crop_to_mask: false           # square crop around the mask centroid
   crop_size: null               # in-plane H=W; expands + pads if the mask does not fit
+  remove_small_holes: false     # fill small holes in the ROI mask
+  mirror_mask_y: false          # union with left–right flip across the centroid
 ```
 
 `feature_type: dinov3` drops the CLS token **and** the register tokens before the patch grid (4 registers by default, matching `facebook/dinov3-vitb16-pretrain-lvd1689m`).

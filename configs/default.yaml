@@ -26,6 +26,9 @@ extraction:
   crop_size: null               # in-plane H=W. null = smallest square covering the mask
                                 # if the mask does not fit, the crop expands and out-of-image voxels are padded
   min_mask_pixels: 1            # slices with fewer mask pixels in the crop are dropped
+  remove_small_holes: false     # fill small holes in the mask (per slice)
+  hole_area_threshold: 512      # max hole area (pixels) to fill; same default as dinov2-radiomics
+  mirror_mask_y: false          # union mask with its left–right flip across the 3D centroid x
 
 output:
   include_flat_patches: false

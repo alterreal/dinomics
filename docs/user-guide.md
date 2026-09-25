@@ -159,14 +159,15 @@ Without a mask:
 This is the full pipeline, in order. Every knob lives in the config file.
 
 1. **Load** the image (and mask / label map). Align the mask to the image grid.
-2. **Optional crop** (`crop_to_mask`): square window in-plane, centered on the mask **centroid**. Height equals width. `crop_size: null` uses the smallest square that covers the mask. If a requested size is too small, the square **grows**. Voxels outside the volume are **zero-padded**. Depth keeps only slices whose crop contains at least `min_mask_pixels` mask voxels.
-3. **Optional image mask** (`apply_image_mask`): multiply the (cropped) volume by the mask so background voxels are zero **before** the network.
-4. **Pick slices**: `slice_indices`, or every `slice_step`-th slice. `skip_empty_slices` drops empty ones. `max_slices` truncates the list.
-5. **Intensity**: optional CT window `[center, width]` or percentile clip, then per-slice **min–max** to `0–255` and stack to RGB.
-6. **Square pad (no mask only)**: if the slice is not square, center-pad with black so height equals width. This keeps aspect ratio when the processor later resizes to `image_size`.
-7. **HuggingFace processor**: square resize to `image_size × image_size`, ImageNet normalize. `do_center_crop` is off in the shipped configs so the whole (cropped or letterboxed) slice is kept.
-8. **Forward pass**: CLS token + patch tokens. DINOv3 also drops **register tokens** (4 by default) before the patch grid.
-9. **Optional patch mask** (`apply_patch_mask`): each DINO token is tested on the **same uniform G×G tiling** the model uses after the square resize. If that cell has **no** mask voxels, the embedding is set to the zero vector.
+2. **Optional mask cleanup** (ROI mask only, not `label_mask`): `remove_small_holes` fills per-slice holes up to `hole_area_threshold` (default 512). `mirror_mask_y` unions the mask with its left–right reflection across the 3D centroid's x (same as dinov2-radiomics). Both run **before** the crop.
+3. **Optional crop** (`crop_to_mask`): square window in-plane, centered on the mask **centroid**. Height equals width. `crop_size: null` uses the smallest square that covers the mask. If a requested size is too small, the square **grows**. Voxels outside the volume are **zero-padded**. Depth keeps only slices whose crop contains at least `min_mask_pixels` mask voxels.
+4. **Optional image mask** (`apply_image_mask`): multiply the (cropped) volume by the mask so background voxels are zero **before** the network.
+5. **Pick slices**: `slice_indices`, or every `slice_step`-th slice. `skip_empty_slices` drops empty ones. `max_slices` truncates the list.
+6. **Intensity**: optional CT window `[center, width]` or percentile clip, then per-slice **min–max** to `0–255` and stack to RGB.
+7. **Square pad (no mask only)**: if the slice is not square, center-pad with black so height equals width. This keeps aspect ratio when the processor later resizes to `image_size`.
+8. **HuggingFace processor**: square resize to `image_size × image_size`, ImageNet normalize. `do_center_crop` is off in the shipped configs so the whole (cropped or letterboxed) slice is kept.
+9. **Forward pass**: CLS token + patch tokens. DINOv3 also drops **register tokens** (4 by default) before the patch grid.
+10. **Optional patch mask** (`apply_patch_mask`): each DINO token is tested on the **same uniform G×G tiling** the model uses after the square resize. If that cell has **no** mask voxels, the embedding is set to the zero vector.
 
 Background that DINO still “sees” via attention (black padded pixels, nearby anatomy) can influence kept tokens. Zeroing is applied **after** the forward pass.
 
@@ -218,6 +219,9 @@ If both are set, **window wins**. After this, each slice is still min–max scal
 | `crop_to_mask` | `false` | Square crop around the mask centroid |
 | `crop_size` | `null` | In-plane side length. `null` = smallest covering square |
 | `min_mask_pixels` | `1` | Minimum mask voxels in a slice (or in the crop) to keep it |
+| `remove_small_holes` | `false` | Fill small holes in the ROI mask (per slice) |
+| `hole_area_threshold` | `512` | Largest hole area (pixels) that `remove_small_holes` fills |
+| `mirror_mask_y` | `false` | Union the mask with its flip across the 3D centroid x |
 
 ### `output`
 
