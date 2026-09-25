@@ -1,6 +1,6 @@
 # DINOmics 🦖🩻
 
-A medical imaging pipeline that wraps Hugging Face DINOv2/DINOv3 and handles I/O, preprocessing, masking, and aggregation so you can extract CLS (slice) and patch embeddings from 3D volumes (and 2D images) slice by slice.
+A medical imaging pipeline that wraps Hugging Face DINOv2/DINOv3 and handles I/O, preprocessing, masking, and aggregation, enabling straightforward extraction of CLS (slice-level) and patch embeddings from 3D volumes and 2D images.
 
 For each processed slice the DINOmics returns:
 
@@ -53,6 +53,15 @@ result = extract_features(
 
 print(result.cls_embeddings.shape)      # (N, 768)
 print(result.patch_embeddings.shape)    # (N, 16, 16, 768)
+```
+
+Pool to one vector per case, like conventional radiomics, by passing a NumPy reducer (or list of them!). 
+
+```python
+import numpy as np
+         
+case_patches = result.aggregate_patches([np.mean, np.max])  
+case_slices = result.aggregate_slices(np.mean)              
 ```
 
 Reuse one loaded model across many images:
