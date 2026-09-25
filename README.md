@@ -14,9 +14,7 @@ Any grayscale medical image that SimpleITK can read (`.mha`, `.nii`, `.nii.gz`, 
 
 ## Install
 
-DINOmics is managed with [uv](https://docs.astral.sh/uv/) (`pyproject.toml` + `uv.lock`). It targets Python 3.11–3.13 (`.python-version` pins 3.12).
-
-PyTorch is installed through a **conflicting extra**. Pick the wheel whose CUDA version is **≤ your driver** (`nvidia-smi`). macOS and machines without an NVIDIA GPU should use `cpu`.
+Pick the wheel whose CUDA version is **≤ your driver** (`nvidia-smi`).
 
 | Extra | PyTorch wheels | Use when |
 |---|---|---|
@@ -31,8 +29,6 @@ nvidia-smi   # "CUDA Version" is the driver; pick an extra at or below that
 uv sync --extra cu121
 uv sync --extra cu121 --extra notebook   # optional: Jupyter for the example notebook
 ```
-
-Examples: driver 12.2 → `cu121`; driver 12.8 → `cu126` (highest extra that still fits). Do not combine two CUDA extras.
 
 Activate the environment with `source .venv/bin/activate`, or prefix commands with `uv run`.
 
